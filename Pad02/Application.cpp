@@ -14,6 +14,7 @@
 #include <sstream>
 #include <vector>
 
+#include "File.h"
 #include "Window.h"
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
@@ -34,56 +35,12 @@ enum Pad02Menu
 	MainFile,
 	MainFileClose,
 	MainFileSave,
+	MainFileLoad,
 	MainTypographyStyle02,
 };
 
 extern void ErrorExit();
 
-void SaveContent(const std::wstring& szFilename, std::vector<TCHAR>& buffer)
-{
-	HANDLE hFile = CreateFileW(
-		szFilename.c_str(),
-		GENERIC_WRITE,
-		0,
-		nullptr,
-		CREATE_NEW,
-		FILE_ATTRIBUTE_NORMAL,
-		nullptr);
-
-	DWORD writtenBytes;
-
-	const auto text = std::wstring(buffer.begin(), buffer.end());
-	const auto sizeOfMultibyte = WideCharToMultiByte(
-		CP_UTF8,
-		0,
-		text.c_str(),
-		text.size(),
-		nullptr,
-		0,
-		nullptr,
-		nullptr);
-	fprintf(stderr, "size to allocate %ld\n", sizeOfMultibyte);
-
-	std::string mbVector;
-	mbVector.resize(sizeOfMultibyte);
-
-	WideCharToMultiByte(
-		CP_UTF8,
-		0,
-		text.c_str(),
-		text.size(),
-		const_cast<char*>(mbVector.c_str()),
-		sizeOfMultibyte,
-		nullptr,
-		nullptr);
-	fprintf(stdout, "%s", std::string(mbVector.begin(), mbVector.end()).c_str());
-	if (!WriteFile(hFile, mbVector.data(), mbVector.size(), &writtenBytes, nullptr))
-	{
-		fprintf(stderr, "failed to write to file\n");
-	}
-
-	CloseHandle(hFile);
-}
 
 class D2Window : public Pad::Window
 {
@@ -296,41 +253,52 @@ public:
 
 	void OnCommand(WPARAM wParam, LPARAM lParam) override
 	{
+		std::wstring filename;
+		filename.resize(MAX_PATH);
+		OPENFILENAME ofn{};
+		ofn.lStructSize = sizeof(OPENFILENAMEW);
+		ofn.hInstance = HINST_THISCOMPONENT;
+		ofn.hwndOwner = GetWindow();
+		ofn.lpstrCustomFilter = nullptr;
+		ofn.nMaxCustFilter = 0;
+		ofn.nFilterIndex = 0;
+		ofn.lpstrFile = filename.data();
+		ofn.nMaxFile = MAX_PATH;
+		ofn.lpstrFileTitle = nullptr;
+		ofn.nMaxFileTitle = MAX_PATH;
+		ofn.lpstrInitialDir = nullptr;
+		ofn.lpstrTitle = nullptr;
+		ofn.Flags = 0;
+		ofn.nFileOffset = 0;
+		ofn.nFileExtension = 0;
+		ofn.lpstrDefExt = TEXT("txt");
+		ofn.lCustData = 0L;
+		ofn.lpfnHook = nullptr;
+		ofn.lpTemplateName = nullptr;
 		if (wParam == MainFileSave)
 		{
-			std::wstring filename;
-			filename.resize(MAX_PATH);
-			OPENFILENAME ofn{};
-			ofn.lStructSize = sizeof(OPENFILENAMEW);
-			ofn.hInstance = HINST_THISCOMPONENT;
-			ofn.hwndOwner = GetWindow();
-			ofn.lpstrCustomFilter = nullptr;
-			ofn.nMaxCustFilter = 0;
-			ofn.nFilterIndex = 0;
-			ofn.lpstrFile = filename.data();
-			ofn.nMaxFile = MAX_PATH;
-			ofn.lpstrFileTitle = nullptr;
-			ofn.nMaxFileTitle = MAX_PATH;
-			ofn.lpstrInitialDir = nullptr;
-			ofn.lpstrTitle = nullptr;
-			ofn.Flags = 0;
-			ofn.nFileOffset = 0;
-			ofn.nFileExtension = 0;
-			ofn.lpstrDefExt = TEXT("txt");
-			ofn.lCustData = 0L;
-			ofn.lpfnHook = nullptr;
-			ofn.lpTemplateName = nullptr;
-
 			ofn.Flags = OFN_OVERWRITEPROMPT;
 
 			if (GetSaveFileNameW(&ofn))
 			{
-				OutputDebugString(L"Save");
-				fwprintf(stdout, L"filename %s\n", ofn.lpstrFile);
-				SaveContent(filename, m_buf);	
+				if (!Pad02::File::Create(ofn.lpstrFile).Save(std::wstring(m_buf.begin(), m_buf.end())))
+				{
+					fwprintf(stdout, L"filename %s\n", ofn.lpstrFile);
+					fprintf(stderr, "failed to save file\n");
+					return;
+				}
 			}
-
-			
+		} else if (wParam == MainFileLoad)
+		{
+			ofn.Flags = OFN_HIDEREADONLY | OFN_CREATEPROMPT;
+			if(GetOpenFileNameW(&ofn))
+			{
+				OutputDebugString(L"Open");
+				auto file = Pad02::File::Load(ofn.lpstrFile);
+				auto content = file.ReadAll();
+				
+				m_buf.assign(content.begin(), content.end());
+			}
 		}
 		if (wParam == MainFileClose)
 		{
@@ -341,6 +309,13 @@ public:
 
 bool CreateFileMenu(HMENU hParentMenu)
 {
+
+	if(!AppendMenu(hParentMenu, MF_STRING, MainFileLoad, L"&Open"))
+	{
+		fprintf(stderr, "failed to append menu item\n");
+		return false;
+	}
+
 	if (!AppendMenu(hParentMenu, MF_STRING, MainFileSave, L"S&ave"))
 	{
 		fprintf(stderr, "failed to append menu item\n");
