@@ -7,10 +7,14 @@
 #include <commdlg.h>
 
 #include <dwrite.h>
+#include <dwrite_1.h>
+#include <dwrite_2.h>
+#include <dwrite_3.h>
 #pragma comment(lib, "dwrite.lib")
 #include <d2d1.h>
 #pragma comment(lib, "d2d1.lib")
 
+#include <array>
 #include <sstream>
 #include <vector>
 
@@ -134,6 +138,51 @@ public:
 			fprintf(stderr, "failed to add font feature ROUND PARENTHESIS");
 			return false;
 		}
+
+		IDWriteTextAnalyzer *pTextAnalyzer = nullptr;
+		IDWriteTextAnalyzer2 *pTextAnalyzer2 = nullptr;
+		hr = pWriteFactory->CreateTextAnalyzer(&pTextAnalyzer);
+		if (FAILED(hr))
+		{
+			fprintf(stderr, "failed to create text analyzer");
+			return false;
+		}
+
+		IDWriteFontFace *pFontFace = nullptr;
+		IDWriteFontFile *pFontFile = nullptr;
+		hr = pWriteFactory->CreateFontFileReference(L"C:\\Code\\MonoLisa\\ttf\\MonoLisaNormal.ttf", nullptr, &pFontFile);
+		if (FAILED(hr))
+		{
+			fprintf(stderr, "failed to create reference to font");
+			return false;
+		}
+		std::array< IDWriteFontFile*, 1> fontFiles{{pFontFile}};
+		hr = pWriteFactory->CreateFontFace(
+			DWRITE_FONT_FACE_TYPE_TRUETYPE, 
+			fontFiles.size(),fontFiles.data()
+			, 0, DWRITE_FONT_SIMULATIONS_NONE, &pFontFace);
+		if(FAILED(hr))
+		{
+			fprintf(stderr, "failed to create font face");
+			return false;
+		}
+
+		if(pFontFile) pFontFile->Release(); // keep its own reference
+		
+		hr = pTextAnalyzer->QueryInterface(_uuidof(IDWriteTextAnalyzer2),reinterpret_cast<void**>(&pTextAnalyzer2));
+		if (FAILED(hr))
+		{
+			fprintf(stderr, "text analyzer did not support newer version");
+			return false;
+		}
+		// pTextAnalyzer2->GetTypographicFeatures()
+		// Run this before
+		// https://learn.microsoft.com/en-us/windows/win32/api/dwrite/nf-dwrite-idwritetextanalyzer-analyzescript
+		 // pTextAnalyzer2->CheckTypographicFeature(pFontFace, DWRITE_SCRIPT_ANALYSIS{})
+		pFontFace->Release();
+		if(pTextAnalyzer2) pTextAnalyzer2->Release();
+		pTextAnalyzer->Release();
+
 	}
 
 	void OnChar(const TCHAR ch, int cRepeat) override
