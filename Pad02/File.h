@@ -14,7 +14,7 @@ namespace Pad02
 	{
 		std::wstring Content;
 		HANDLE HFile;
-		DWORD CbFileSizeHigh;
+		DWORD CbFileSizeHigh{};
 		DWORD CbFileSizeLow;
 
 		std::string ToMultiByte(const std::wstring& wcData)
@@ -53,7 +53,7 @@ namespace Pad02
 			MultiByteToWideChar(CP_UTF8, 0, mbData.c_str(), mbData.size(), wcData.data(), wcData.size());
 			return wcData;
 		}
-		File(const wchar_t* szFileName, char mode)
+		File(const wchar_t* szFileName, const char mode)
 		{
 			if (mode == 'w')
 			{

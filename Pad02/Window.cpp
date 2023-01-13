@@ -30,8 +30,8 @@ bool Pad::Window::Create(const std::wstring& title )
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		NULL,
-		(HMENU)NULL,
+		nullptr,
+		(HMENU)nullptr,
 		m_hInst,
 		this);
 	if (!m_hwnd)
@@ -39,9 +39,7 @@ bool Pad::Window::Create(const std::wstring& title )
 		return false;
 	}
 
-	UpdateWindow(m_hwnd);
-	ShowWindow(m_hwnd, SW_SHOW);
-
+	
 	return true;
 }
 void ErrorExit() 

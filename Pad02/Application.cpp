@@ -23,26 +23,13 @@
 
 #include <wrl.h>
 
+#include "Graphic.h"
+
 using namespace Microsoft::WRL;
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
-inline auto ValidateResult(HRESULT hr, std::string const& errorMessage)
-{
-	if(FAILED(hr))
-	{
-		throw std::runtime_error(errorMessage);
-	}
-}
 
-static ComPtr<IDWriteFactory> pWriteFactory = nullptr;
-static ComPtr<IDWriteTextLayout> pTextLayout = nullptr;
-static ComPtr<IDWriteTextFormat> pTextFormat = nullptr;
-static ComPtr<IDWriteTypography> pTypography = nullptr;
-
-static ComPtr<ID2D1Factory> pId2D1Factory = nullptr;
-static ComPtr<ID2D1HwndRenderTarget> pRenderTarget = nullptr;
-static ComPtr<ID2D1SolidColorBrush> pBrush = nullptr;
 
 enum Pad02Menu
 {
@@ -55,6 +42,7 @@ enum Pad02Menu
 
 extern void ErrorExit();
 
+std::unique_ptr<Pad02::Graphic> g = nullptr;
 
 class D2Window : public Pad::Window
 {
@@ -69,29 +57,14 @@ public:
 	{
 	}
 
-	bool OnCreate(HWND hwnd) override 
+	bool OnCreate(HWND hwnd) override
 	{
 		HRESULT hr = S_OK;
 		RECT clientRect;
 		GetClientRect(hwnd, &clientRect);
 
-		hr = pId2D1Factory->CreateHwndRenderTarget(
-			D2D1::RenderTargetProperties(),
-			D2D1::HwndRenderTargetProperties(
-				hwnd,
-				D2D1::SizeU(
-					clientRect.right - clientRect.left,
-					clientRect.bottom - clientRect.top)),
-			pRenderTarget.GetAddressOf());
-		ValidateResult(hr, "failed to create hwnd render target");
-		
 
-		hr = pRenderTarget->CreateSolidColorBrush(
-			D2D1::ColorF(0.0f, 0.0f, 0.0f),
-			&pBrush);
-		ValidateResult(hr, "failed to create brush");
-
-		hr = pWriteFactory->CreateTextFormat(L"MonoLisa",
+		/*hr = pWriteFactory->CreateTextFormat(L"MonoLisa",
 		                                     nullptr,
 		                                     DWRITE_FONT_WEIGHT_NORMAL,
 		                                     DWRITE_FONT_STYLE_NORMAL,
@@ -130,12 +103,12 @@ public:
 		ValidateResult(hr, "failed to create font face");
 		
 		hr = pTextAnalyzer->QueryInterface(_uuidof(IDWriteTextAnalyzer2),&pTextAnalyzer2);
-		ValidateResult(hr, "text analyzer did not support newer version");
+		ValidateResult(hr, "text analyzer did not support newer version");*/
 
 		// pTextAnalyzer2->GetTypographicFeatures()
 		// Run this before
 		// https://learn.microsoft.com/en-us/windows/win32/api/dwrite/nf-dwrite-idwritetextanalyzer-analyzescript
-		 // pTextAnalyzer2->CheckTypographicFeature(pFontFace, DWRITE_SCRIPT_ANALYSIS{})
+		// pTextAnalyzer2->CheckTypographicFeature(pFontFace, DWRITE_SCRIPT_ANALYSIS{})
 		return true;
 	}
 
@@ -150,7 +123,10 @@ public:
 
 	void OnPaint(HWND hwnd) override
 	{
-		pRenderTarget->BeginDraw();
+		g->BeginDraw();
+
+		g->EndDraw();
+		/*pRenderTarget->BeginDraw();
 		pRenderTarget->SetTransform(D2D1::IdentityMatrix());
 		pRenderTarget->Clear(D2D1::ColorF(1.f, 1.0f, 1.0f, 1.0f));
 
@@ -196,7 +172,7 @@ public:
 			pBrush.Get());
 		pBrush->SetColor(oldColor);
 
-		pRenderTarget->EndDraw();
+		pRenderTarget->EndDraw();*/
 	}
 
 	void OnMouseMove(int x, int y) override
@@ -221,30 +197,29 @@ public:
 
 	void OnSize(int width, int height) override
 	{
-		pRenderTarget->Resize(D2D1::SizeU(width, height));
+		g->Resize(width, height);
 	}
 
 	void HitTest(const int& x, const int& y)
 	{
-		BOOL trailing;
-		BOOL inside;
+		BOOL trailing = FALSE;
+		BOOL inside = FALSE;
 		DWRITE_HIT_TEST_METRICS metrics{};
 
 
-		HRESULT hr = pTextLayout->HitTestPoint(
+		/*HRESULT hr = pTextLayout->HitTestPoint(
 			static_cast<FLOAT>(x),
 			static_cast<FLOAT>(y),
 			&trailing,
 			&inside,
 			&metrics);
-		ValidateResult(hr, "failed to get hit test");
+		ValidateResult(hr, "failed to get hit test");*/
 
 		fprintf(stderr, "metrics\ninside %s, trailing %s\n", inside ? "true" : "false", trailing ? "true" : "false");
 	}
 
 	void OnDestroy() override
 	{
-		
 	}
 
 	void OnCommand(WPARAM wParam, LPARAM lParam) override
@@ -254,7 +229,7 @@ public:
 		OPENFILENAME ofn{};
 		ofn.lStructSize = sizeof(OPENFILENAMEW);
 		ofn.hInstance = HINST_THISCOMPONENT;
-		ofn.hwndOwner = GetWindow();
+		ofn.hwndOwner = GetInstance();
 		ofn.lpstrCustomFilter = nullptr;
 		ofn.nMaxCustFilter = 0;
 		ofn.nFilterIndex = 0;
@@ -284,29 +259,29 @@ public:
 					return;
 				}
 			}
-		} else if (wParam == MainFileLoad)
+		}
+		else if (wParam == MainFileLoad)
 		{
 			ofn.Flags = OFN_HIDEREADONLY | OFN_CREATEPROMPT;
-			if(GetOpenFileNameW(&ofn))
+			if (GetOpenFileNameW(&ofn))
 			{
 				OutputDebugString(L"Open");
 				auto file = Pad02::File::Load(ofn.lpstrFile);
 				auto content = file.ReadAll();
-				
+
 				m_buf.assign(content.begin(), content.end());
 			}
 		}
 		if (wParam == MainFileClose)
 		{
-			SendMessage(GetWindow(), WM_DESTROY, 0, 0);
+			SendMessage(GetInstance(), WM_DESTROY, 0, 0);
 		}
 	}
 };
 
 bool CreateFileMenu(HMENU hParentMenu)
 {
-
-	if(!AppendMenu(hParentMenu, MF_STRING, MainFileLoad, L"&Open"))
+	if (!AppendMenu(hParentMenu, MF_STRING, MainFileLoad, L"&Open"))
 	{
 		fprintf(stderr, "failed to append menu item\n");
 		return false;
@@ -350,17 +325,8 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	HRESULT hr = DWriteCreateFactory(
-		DWRITE_FACTORY_TYPE_SHARED,
-		_uuidof(IDWriteFactory),
-		reinterpret_cast<IUnknown**>(pWriteFactory.GetAddressOf()));
-	ValidateResult(hr, "failed to create write factory");
 
-	hr = D2D1CreateFactory(
-		D2D1_FACTORY_TYPE_SINGLE_THREADED,
-		pId2D1Factory.GetAddressOf());
-	ValidateResult(hr, "failed to create d2d1 factory");
-
+	g = std::make_unique<Pad02::Graphic>();
 	if (!window.Create(L"PAD 02"))
 	{
 		fprintf(stderr, "failed to create window");
@@ -368,17 +334,25 @@ int main(int argc, char** argv)
 
 		return 1;
 	}
-	const auto mainMenuBar = CreateMenu();
-	const auto mainFileBar = CreatePopupMenu();
+	if (!g->AttachToWindow(window.GetInstance()))
+	{
+		fprintf(stderr, "failed to attach to window");
+		return false;
+	}
+
+	window.Show();
+	
+	const auto mainMenuBar = Pad::Menu();
+	const auto mainFileBar = Pad::PopupMenu();
 	const auto mainTypographyBar = CreatePopupMenu();
 
 
-	if (!CreateFileMenu(mainFileBar))
+	if (!CreateFileMenu(mainFileBar.GetInstance()))
 	{
 		fprintf(stderr, "failed to create File menu\n");
 		return 1;
 	}
-	if (!AppendMenu(mainMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(mainFileBar), L"&File"))
+	if (!AppendMenu(mainMenuBar.GetInstance(), MF_POPUP, reinterpret_cast<UINT_PTR>(mainFileBar.GetInstance()), L"&File"))
 	{
 		fprintf(stderr, "failed to append menu item");
 		return 1;
@@ -390,13 +364,13 @@ int main(int argc, char** argv)
 	}
 
 
-	if (!AppendMenuW(mainMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(mainTypographyBar), L"&Typygraphy"))
+	if (!AppendMenuW(mainMenuBar.GetInstance(), MF_POPUP, reinterpret_cast<UINT_PTR>(mainTypographyBar), L"&Typygraphy"))
 	{
 		fprintf(stderr, "failed to append menu item");
 		return false;
 	}
 
-	if (!SetMenu(window.GetWindow(), mainMenuBar))
+	if (!SetMenu(window.GetInstance(), mainMenuBar.GetInstance()))
 	{
 		fprintf(stderr, "failed to create menu");
 		return false;
@@ -409,8 +383,6 @@ int main(int argc, char** argv)
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-	DestroyMenu(mainFileBar);
-	DestroyMenu(mainMenuBar);
 	DestroyMenu(mainTypographyBar);
 
 	CoUninitialize();
