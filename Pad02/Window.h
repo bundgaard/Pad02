@@ -4,10 +4,13 @@
 #include <string>
 #include <Windows.h>
 #include <Windowsx.h>
+#include <wrl.h>
 
 
 namespace Pad
 {
+	using namespace Microsoft::WRL;
+
 	constexpr wchar_t app_class[] = L"PAD_WINDOW";
 
 	class Window
@@ -24,52 +27,52 @@ namespace Pad
 		};
 		~Window() = default;
 
-		static ATOM Register(HINSTANCE hInst);
-		bool Create(const std::wstring& title);
+		static auto Register(HINSTANCE hInst) -> ATOM;
+		auto Create(const std::wstring& title) -> bool;
 
-		virtual void OnPaint(HWND)
+		virtual auto OnPaint(HWND)-> void
 		{
 		}
 
-		virtual bool OnCreate(HWND)
+		virtual auto OnCreate(HWND) -> bool
 		{
 			return false;
 		}
 
-		virtual void OnSize(int cx, int cy)
+		virtual auto OnSize(int cx, int cy)-> void
 		{
 		}
-		virtual void OnChar(TCHAR ch, int cRepeat)
-		{
-			
-		}
-		virtual void OnCommand(WPARAM wParam, LPARAM lParam)
+		virtual auto OnChar(TCHAR ch, int cRepeat)-> void
 		{
 			
 		}
-
-		virtual void OnMouseUp(int x, int y)
-		{
-		}
-
-		virtual void OnMouseDown(int x, int y)
-		{
-		}
-
-		virtual void OnMouseMove(int x, int y)
-		{
-		}
-
-		virtual void OnDestroy()
+		virtual auto OnCommand(WPARAM wParam, LPARAM lParam)-> void
 		{
 			
 		}
-		void SetTitle(const std::wstring& title)
+
+		virtual auto OnMouseUp(int x, int y)-> void
+		{
+		}
+
+		virtual auto OnMouseDown(int x, int y)-> void
+		{
+		}
+
+		virtual auto OnMouseMove(int x, int y)-> void
+		{
+		}
+
+		virtual auto OnDestroy()-> void
+		{
+			
+		}
+		auto SetTitle(const std::wstring& title)
 		{
 			SetWindowText(m_hwnd, title.c_str());
 		}
 
-		HWND GetWindow() const
+		auto GetWindow() const
 		{
 			return m_hwnd;
 		}

@@ -21,18 +21,28 @@
 #include "File.h"
 #include "Window.h"
 
+#include <wrl.h>
+
+using namespace Microsoft::WRL;
+
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
+inline auto ValidateResult(HRESULT hr, std::string const& errorMessage)
+{
+	if(FAILED(hr))
+	{
+		throw std::runtime_error(errorMessage);
+	}
+}
 
+static ComPtr<IDWriteFactory> pWriteFactory = nullptr;
+static ComPtr<IDWriteTextLayout> pTextLayout = nullptr;
+static ComPtr<IDWriteTextFormat> pTextFormat = nullptr;
+static ComPtr<IDWriteTypography> pTypography = nullptr;
 
-static IDWriteFactory* pWriteFactory = nullptr;
-static IDWriteTextLayout* pTextLayout = nullptr;
-static IDWriteTextFormat* pTextFormat = nullptr;
-static IDWriteTypography* pTypography = nullptr;
-
-static ID2D1Factory* pId2D1Factory = nullptr;
-static ID2D1HwndRenderTarget* pRenderTarget = nullptr;
-static ID2D1SolidColorBrush* pBrush = nullptr;
+static ComPtr<ID2D1Factory> pId2D1Factory = nullptr;
+static ComPtr<ID2D1HwndRenderTarget> pRenderTarget = nullptr;
+static ComPtr<ID2D1SolidColorBrush> pBrush = nullptr;
 
 enum Pad02Menu
 {
@@ -59,7 +69,7 @@ public:
 	{
 	}
 
-	bool OnCreate(HWND hwnd) override
+	bool OnCreate(HWND hwnd) override 
 	{
 		HRESULT hr = S_OK;
 		RECT clientRect;
@@ -72,23 +82,14 @@ public:
 				D2D1::SizeU(
 					clientRect.right - clientRect.left,
 					clientRect.bottom - clientRect.top)),
-			&pRenderTarget);
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to create hwnd render target\n");
-			return false;
-		}
-
+			pRenderTarget.GetAddressOf());
+		ValidateResult(hr, "failed to create hwnd render target");
+		
 
 		hr = pRenderTarget->CreateSolidColorBrush(
 			D2D1::ColorF(0.0f, 0.0f, 0.0f),
 			&pBrush);
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to create brush\n");
-			return false;
-		}
-
+		ValidateResult(hr, "failed to create brush");
 
 		hr = pWriteFactory->CreateTextFormat(L"MonoLisa",
 		                                     nullptr,
@@ -97,92 +98,45 @@ public:
 		                                     DWRITE_FONT_STRETCH_NORMAL,
 		                                     13.f,
 		                                     L"",
-		                                     &pTextFormat);
-
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to create text format\n");
-			return false;
-		}
-
+		                                     pTextFormat.GetAddressOf());
+		ValidateResult(hr, "failed to create text format");
 		hr = pWriteFactory->CreateTypography(&pTypography);
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to create typography\n");
-			return false;
-		}
-
+		ValidateResult(hr, "failed to create typography");
 		hr = pTypography->AddFontFeature(DWRITE_FONT_FEATURE{DWRITE_FONT_FEATURE_TAG_STYLISTIC_SET_2, 2});
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to add font feature SS02\n");
-			return false;
-		}
-
+		ValidateResult(hr, "failed to add font feature SS02");
 		hr = pTypography->AddFontFeature(DWRITE_FONT_FEATURE{DWRITE_FONT_FEATURE_TAG_SLASHED_ZERO, 1});
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to add font feature SLASHED_ZERO\n");
-			return false;
-		}
-
+		ValidateResult(hr, "failed to add font feature SLASHED_ZERO");
 		hr = pTypography->AddFontFeature(DWRITE_FONT_FEATURE{DWRITE_FONT_FEATURE_TAG_STYLISTIC_SET_7, 1});
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to add font feature ROUND PARENTHESIS");
-			return false;
-		}
+		ValidateResult(hr, "failed to add font feature ROUND PARENTHESIS");
 		hr = pTypography->AddFontFeature(DWRITE_FONT_FEATURE{DWRITE_FONT_FEATURE_TAG_STYLISTIC_SET_8, 1});
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to add font feature ROUND PARENTHESIS");
-			return false;
-		}
+		ValidateResult(hr, "failed to add font feature ROUND PARENTHESIS");
 
-		IDWriteTextAnalyzer *pTextAnalyzer = nullptr;
-		IDWriteTextAnalyzer2 *pTextAnalyzer2 = nullptr;
-		hr = pWriteFactory->CreateTextAnalyzer(&pTextAnalyzer);
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to create text analyzer");
-			return false;
-		}
 
-		IDWriteFontFace *pFontFace = nullptr;
-		IDWriteFontFile *pFontFile = nullptr;
+		ComPtr<IDWriteTextAnalyzer > pTextAnalyzer = nullptr;
+		ComPtr<IDWriteTextAnalyzer2> pTextAnalyzer2 = nullptr;
+		hr = pWriteFactory->CreateTextAnalyzer(pTextAnalyzer.GetAddressOf());
+		ValidateResult(hr, "failed to create text analyzer");
+
+		ComPtr<IDWriteFontFace> pFontFace = nullptr;
+		ComPtr<IDWriteFontFile> pFontFile = nullptr;
 		hr = pWriteFactory->CreateFontFileReference(L"C:\\Code\\MonoLisa\\ttf\\MonoLisaNormal.ttf", nullptr, &pFontFile);
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to create reference to font");
-			return false;
-		}
-		std::array< IDWriteFontFile*, 1> fontFiles{{pFontFile}};
+		ValidateResult(hr, "failed to create reference to font");
+
+		std::array< IDWriteFontFile*, 1> fontFiles{{pFontFile.Get()}};
 		hr = pWriteFactory->CreateFontFace(
 			DWRITE_FONT_FACE_TYPE_TRUETYPE, 
 			fontFiles.size(),fontFiles.data()
 			, 0, DWRITE_FONT_SIMULATIONS_NONE, &pFontFace);
-		if(FAILED(hr))
-		{
-			fprintf(stderr, "failed to create font face");
-			return false;
-		}
-
-		if(pFontFile) pFontFile->Release(); // keep its own reference
+		ValidateResult(hr, "failed to create font face");
 		
-		hr = pTextAnalyzer->QueryInterface(_uuidof(IDWriteTextAnalyzer2),reinterpret_cast<void**>(&pTextAnalyzer2));
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "text analyzer did not support newer version");
-			return false;
-		}
+		hr = pTextAnalyzer->QueryInterface(_uuidof(IDWriteTextAnalyzer2),&pTextAnalyzer2);
+		ValidateResult(hr, "text analyzer did not support newer version");
+
 		// pTextAnalyzer2->GetTypographicFeatures()
 		// Run this before
 		// https://learn.microsoft.com/en-us/windows/win32/api/dwrite/nf-dwrite-idwritetextanalyzer-analyzescript
 		 // pTextAnalyzer2->CheckTypographicFeature(pFontFace, DWRITE_SCRIPT_ANALYSIS{})
-		pFontFace->Release();
-		if(pTextAnalyzer2) pTextAnalyzer2->Release();
-		pTextAnalyzer->Release();
-
+		return true;
 	}
 
 	void OnChar(const TCHAR ch, int cRepeat) override
@@ -201,26 +155,24 @@ public:
 		pRenderTarget->Clear(D2D1::ColorF(1.f, 1.0f, 1.0f, 1.0f));
 
 		const auto title = std::wstring(m_buf.begin(), m_buf.end());
-
-		if (pTextLayout != nullptr)
-			pTextLayout->Release();
+		if(pTextLayout != nullptr) pTextLayout->Release();
 		RECT clientRect;
 		GetClientRect(hwnd, &clientRect);
 
 		HRESULT hr = pWriteFactory->CreateTextLayout(
 			title.c_str(),
 			static_cast<UINT32>(title.size()),
-			pTextFormat,
+			pTextFormat.Get(),
 			static_cast<FLOAT>(clientRect.right - clientRect.left),
 			static_cast<FLOAT>(clientRect.bottom - clientRect.top),
-			&pTextLayout);
+			pTextLayout.GetAddressOf());
 		if (FAILED(hr))
 		{
 			fprintf(stderr, "failed to create text layout\n");
 			return;
 		}
 
-		hr = pTextLayout->SetTypography(pTypography, DWRITE_TEXT_RANGE{0, static_cast<UINT32>(title.size())});
+		hr = pTextLayout->SetTypography(pTypography.Get(), DWRITE_TEXT_RANGE{0, static_cast<UINT32>(title.size())});
 		if (FAILED(hr))
 		{
 			fprintf(stderr, "failed to set typography");
@@ -231,15 +183,17 @@ public:
 		pBrush->SetColor(D2D1::ColorF(0.0f, 0.0f, 0.0f));
 		pRenderTarget->DrawTextLayout(
 			D2D1::Point2F(0.f, 0.f),
-			pTextLayout,
-			pBrush);
+			pTextLayout.Get(),
+			pBrush.Get());
 		pBrush->SetColor(oldColor);
 
 		oldColor = pBrush->GetColor();
 		DWRITE_TEXT_METRICS textMetrics{};
 		pTextLayout->GetMetrics(&textMetrics);
 
-		pRenderTarget->FillRectangle(D2D1::RectF(textMetrics.left, 0.0f, 2.0f, textMetrics.height), pBrush);
+		pRenderTarget->FillRectangle(
+			D2D1::RectF(textMetrics.left, 0.0f, 2.0f, textMetrics.height), 
+			pBrush.Get());
 		pBrush->SetColor(oldColor);
 
 		pRenderTarget->EndDraw();
@@ -283,21 +237,14 @@ public:
 			&trailing,
 			&inside,
 			&metrics);
-		if (FAILED(hr))
-		{
-			const auto dwError = GetLastError();
-			fprintf(stderr, "failed to get hit test with %ld\n", dwError);
-		}
+		ValidateResult(hr, "failed to get hit test");
 
 		fprintf(stderr, "metrics\ninside %s, trailing %s\n", inside ? "true" : "false", trailing ? "true" : "false");
 	}
 
 	void OnDestroy() override
 	{
-		if (pTextLayout != nullptr)
-		{
-			pTextLayout->Release();
-		}
+		
 	}
 
 	void OnCommand(WPARAM wParam, LPARAM lParam) override
@@ -406,22 +353,13 @@ int main(int argc, char** argv)
 	HRESULT hr = DWriteCreateFactory(
 		DWRITE_FACTORY_TYPE_SHARED,
 		_uuidof(IDWriteFactory),
-		reinterpret_cast<IUnknown**>(&pWriteFactory));
-	if (FAILED(hr))
-	{
-		fprintf(stderr, "failed to create write factory\n");
-		return 1;
-	}
+		reinterpret_cast<IUnknown**>(pWriteFactory.GetAddressOf()));
+	ValidateResult(hr, "failed to create write factory");
 
 	hr = D2D1CreateFactory(
 		D2D1_FACTORY_TYPE_SINGLE_THREADED,
-		_uuidof(ID2D1Factory),
-		reinterpret_cast<void**>(&pId2D1Factory));
-	if (FAILED(hr))
-	{
-		fprintf(stderr, "failed to create d2d1 factory\n");
-		return 1;
-	}
+		pId2D1Factory.GetAddressOf());
+	ValidateResult(hr, "failed to create d2d1 factory");
 
 	if (!window.Create(L"PAD 02"))
 	{
@@ -475,11 +413,6 @@ int main(int argc, char** argv)
 	DestroyMenu(mainMenuBar);
 	DestroyMenu(mainTypographyBar);
 
-	pTypography->Release();
-	pTextFormat->Release();
-	pWriteFactory->Release();
-	pRenderTarget->Release();
-	pId2D1Factory->Release();
 	CoUninitialize();
 	return static_cast<INT>(msg.wParam);
 }
