@@ -42,7 +42,8 @@ extern void ErrorExit();
 
 std::unique_ptr<Pad02::Graphic> g = nullptr;
 std::unique_ptr<Pad02::Text> text = nullptr;
-
+int mouseStartX, mouseStartY, mouseEndX, mouseEndY;
+bool mouseMoving = false;
 class D2Window : public Pad::Window
 {
 	bool mouseDown = false;
@@ -83,12 +84,23 @@ public:
 		                                         600,
 		                                         600);
 		g->DrawTextLayout(D2D1::Point2F(0.f, 0.f), textlayout);
+		if(mouseMoving)
+		{
+			g->DrawLine(D2D1::Point2F(static_cast<float>(mouseStartX), static_cast<float>(mouseStartY) ), D2D1::Point2F(static_cast<float>(mouseEndX), static_cast<float>(mouseEndY) ));
+		}
 		g->EndDraw();
 	}
 
 	void OnMouseMove(int x, int y) override
 	{
 		std::wostringstream coords;
+		if(mouseDown)
+		{
+			mouseMoving = true;
+		} else
+		{
+			mouseMoving = false;
+		}
 		coords << L"X=" << x << L",Y=" << y;
 		SetTitle(coords.str());
 	}
@@ -96,13 +108,16 @@ public:
 	void OnMouseDown(int x, int y) override
 	{
 		mouseDown = true;
-
+		mouseStartX = x;
+		mouseStartY = y;
 		HitTest(x, y);
 	}
 
 	void OnMouseUp(int x, int y) override
 	{
 		mouseDown = false;
+		mouseEndX = x;
+		mouseEndY = y;
 		HitTest(x, y);
 	}
 
@@ -225,6 +240,8 @@ bool CreateTypographyMenu(HMENU hParentMenu)
 
 int main(int argc, char** argv)
 {
+	// According to Microsoft SDL
+	HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption,nullptr, 0);
 	SetConsoleOutputCP(CP_UTF8);
 
 	CoInitialize(nullptr);
