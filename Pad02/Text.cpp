@@ -8,18 +8,10 @@
 Pad02::Text::Text()
 {
 	HRESULT hr = S_OK;
-	hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_ISOLATED, _uuidof(IDWriteFactory),
+	hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_ISOLATED,
+	                         _uuidof(IDWriteFactory),
 	                         reinterpret_cast<IUnknown**>(pWriteFactory.GetAddressOf()));
 	ValidateResult(hr, "failed to create direct write factory");
-	hr = pWriteFactory->CreateTextFormat(L"MonoLisa",
-	                                     nullptr,
-	                                     DWRITE_FONT_WEIGHT_NORMAL,
-	                                     DWRITE_FONT_STYLE_NORMAL,
-	                                     DWRITE_FONT_STRETCH_NORMAL,
-	                                     13.f,
-	                                     L"",
-	                                     pTextFormat.GetAddressOf());
-	ValidateResult(hr, "failed to create text format");
 	hr = pWriteFactory->CreateTypography(&pTypography);
 	ValidateResult(hr, "failed to create typography");
 	hr = pTypography->AddFontFeature(DWRITE_FONT_FEATURE{DWRITE_FONT_FEATURE_TAG_STYLISTIC_SET_2, 2});
@@ -56,6 +48,20 @@ Pad02::Text::Text()
 	// Run this before
 	// https://learn.microsoft.com/en-us/windows/win32/api/dwrite/nf-dwrite-idwritetextanalyzer-analyzescript
 	// pTextAnalyzer2->CheckTypographicFeature(pFontFace, DWRITE_SCRIPT_ANALYSIS{})
+}
+
+auto Pad02::Text::CreateTextFormat(const std::wstring fontName, float fontSize) -> void
+{
+	HRESULT hr = S_OK;
+	hr = pWriteFactory->CreateTextFormat(fontName.c_str(),
+	                                     nullptr,
+	                                     DWRITE_FONT_WEIGHT_NORMAL,
+	                                     DWRITE_FONT_STYLE_NORMAL,
+	                                     DWRITE_FONT_STRETCH_NORMAL,
+	                                     fontSize,
+	                                     L"",
+	                                     pTextFormat.GetAddressOf());
+	ValidateResult(hr, "failed to create text format");
 }
 
 auto Pad02::Text::CreateTextLayout(const std::wstring& text, float maxWidth,

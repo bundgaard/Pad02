@@ -16,7 +16,6 @@
 #include "Window.h"
 
 
-
 #include "Graphic.h"
 #include "Text.h"
 
@@ -64,7 +63,6 @@ public:
 		GetClientRect(hwnd, &clientRect);
 
 
-		
 		return true;
 	}
 
@@ -81,10 +79,11 @@ public:
 	{
 		g->BeginDraw();
 		const auto title = std::wstring(m_buf.begin(), m_buf.end());
-		auto textlayout = text->CreateTextLayout(title.c_str(), 600, 600);
+		auto textlayout = text->CreateTextLayout(title,
+		                                         600,
+		                                         600);
 		g->DrawTextLayout(D2D1::Point2F(0.f, 0.f), textlayout);
 		g->EndDraw();
-	
 	}
 
 	void OnMouseMove(int x, int y) override
@@ -252,9 +251,9 @@ int main(int argc, char** argv)
 		return false;
 	}
 	text = std::make_unique<Pad02::Text>();
-
+	text->CreateTextFormat(L"MonoLisa", 13.0f);
 	window.Show();
-	
+
 	const auto mainMenuBar = Pad::Menu();
 	const auto mainFileBar = Pad::PopupMenu();
 	const auto mainTypographyBar = CreatePopupMenu();
@@ -265,7 +264,8 @@ int main(int argc, char** argv)
 		fprintf(stderr, "failed to create File menu\n");
 		return 1;
 	}
-	if (!AppendMenu(mainMenuBar.GetInstance(), MF_POPUP, reinterpret_cast<UINT_PTR>(mainFileBar.GetInstance()), L"&File"))
+	if (!AppendMenu(mainMenuBar.GetInstance(), MF_POPUP, reinterpret_cast<UINT_PTR>(mainFileBar.GetInstance()),
+	                L"&File"))
 	{
 		fprintf(stderr, "failed to append menu item");
 		return 1;
@@ -277,7 +277,8 @@ int main(int argc, char** argv)
 	}
 
 
-	if (!AppendMenuW(mainMenuBar.GetInstance(), MF_POPUP, reinterpret_cast<UINT_PTR>(mainTypographyBar), L"&Typygraphy"))
+	if (!AppendMenuW(mainMenuBar.GetInstance(), MF_POPUP, reinterpret_cast<UINT_PTR>(mainTypographyBar),
+	                 L"&Typygraphy"))
 	{
 		fprintf(stderr, "failed to append menu item");
 		return false;
