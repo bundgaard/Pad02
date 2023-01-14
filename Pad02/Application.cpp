@@ -1,5 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
-#include <stdio.h>
+#include <wrl.h>
 #include <Windows.h>
 #include <Windowsx.h>
 #include <ShlObj.h>
@@ -7,23 +7,22 @@
 #include <commdlg.h>
 
 #include <dwrite.h>
-#include <dwrite_1.h>
-#include <dwrite_2.h>
-#include <dwrite_3.h>
-#pragma comment(lib, "dwrite.lib")
-#include <d2d1.h>
-#pragma comment(lib, "d2d1.lib")
 
-#include <array>
+
 #include <sstream>
 #include <vector>
 
 #include "File.h"
 #include "Window.h"
 
-#include <wrl.h>
+
 
 #include "Graphic.h"
+#include "Text.h"
+
+
+#pragma comment(lib, "dwrite.lib")
+#pragma comment(lib, "d2d1.lib")
 
 using namespace Microsoft::WRL;
 
@@ -43,6 +42,7 @@ enum Pad02Menu
 extern void ErrorExit();
 
 std::unique_ptr<Pad02::Graphic> g = nullptr;
+std::unique_ptr<Pad02::Text> text = nullptr;
 
 class D2Window : public Pad::Window
 {
@@ -64,51 +64,7 @@ public:
 		GetClientRect(hwnd, &clientRect);
 
 
-		/*hr = pWriteFactory->CreateTextFormat(L"MonoLisa",
-		                                     nullptr,
-		                                     DWRITE_FONT_WEIGHT_NORMAL,
-		                                     DWRITE_FONT_STYLE_NORMAL,
-		                                     DWRITE_FONT_STRETCH_NORMAL,
-		                                     13.f,
-		                                     L"",
-		                                     pTextFormat.GetAddressOf());
-		ValidateResult(hr, "failed to create text format");
-		hr = pWriteFactory->CreateTypography(&pTypography);
-		ValidateResult(hr, "failed to create typography");
-		hr = pTypography->AddFontFeature(DWRITE_FONT_FEATURE{DWRITE_FONT_FEATURE_TAG_STYLISTIC_SET_2, 2});
-		ValidateResult(hr, "failed to add font feature SS02");
-		hr = pTypography->AddFontFeature(DWRITE_FONT_FEATURE{DWRITE_FONT_FEATURE_TAG_SLASHED_ZERO, 1});
-		ValidateResult(hr, "failed to add font feature SLASHED_ZERO");
-		hr = pTypography->AddFontFeature(DWRITE_FONT_FEATURE{DWRITE_FONT_FEATURE_TAG_STYLISTIC_SET_7, 1});
-		ValidateResult(hr, "failed to add font feature ROUND PARENTHESIS");
-		hr = pTypography->AddFontFeature(DWRITE_FONT_FEATURE{DWRITE_FONT_FEATURE_TAG_STYLISTIC_SET_8, 1});
-		ValidateResult(hr, "failed to add font feature ROUND PARENTHESIS");
-
-
-		ComPtr<IDWriteTextAnalyzer > pTextAnalyzer = nullptr;
-		ComPtr<IDWriteTextAnalyzer2> pTextAnalyzer2 = nullptr;
-		hr = pWriteFactory->CreateTextAnalyzer(pTextAnalyzer.GetAddressOf());
-		ValidateResult(hr, "failed to create text analyzer");
-
-		ComPtr<IDWriteFontFace> pFontFace = nullptr;
-		ComPtr<IDWriteFontFile> pFontFile = nullptr;
-		hr = pWriteFactory->CreateFontFileReference(L"C:\\Code\\MonoLisa\\ttf\\MonoLisaNormal.ttf", nullptr, &pFontFile);
-		ValidateResult(hr, "failed to create reference to font");
-
-		std::array< IDWriteFontFile*, 1> fontFiles{{pFontFile.Get()}};
-		hr = pWriteFactory->CreateFontFace(
-			DWRITE_FONT_FACE_TYPE_TRUETYPE, 
-			fontFiles.size(),fontFiles.data()
-			, 0, DWRITE_FONT_SIMULATIONS_NONE, &pFontFace);
-		ValidateResult(hr, "failed to create font face");
 		
-		hr = pTextAnalyzer->QueryInterface(_uuidof(IDWriteTextAnalyzer2),&pTextAnalyzer2);
-		ValidateResult(hr, "text analyzer did not support newer version");*/
-
-		// pTextAnalyzer2->GetTypographicFeatures()
-		// Run this before
-		// https://learn.microsoft.com/en-us/windows/win32/api/dwrite/nf-dwrite-idwritetextanalyzer-analyzescript
-		// pTextAnalyzer2->CheckTypographicFeature(pFontFace, DWRITE_SCRIPT_ANALYSIS{})
 		return true;
 	}
 
@@ -124,55 +80,11 @@ public:
 	void OnPaint(HWND hwnd) override
 	{
 		g->BeginDraw();
-
-		g->EndDraw();
-		/*pRenderTarget->BeginDraw();
-		pRenderTarget->SetTransform(D2D1::IdentityMatrix());
-		pRenderTarget->Clear(D2D1::ColorF(1.f, 1.0f, 1.0f, 1.0f));
-
 		const auto title = std::wstring(m_buf.begin(), m_buf.end());
-		if(pTextLayout != nullptr) pTextLayout->Release();
-		RECT clientRect;
-		GetClientRect(hwnd, &clientRect);
-
-		HRESULT hr = pWriteFactory->CreateTextLayout(
-			title.c_str(),
-			static_cast<UINT32>(title.size()),
-			pTextFormat.Get(),
-			static_cast<FLOAT>(clientRect.right - clientRect.left),
-			static_cast<FLOAT>(clientRect.bottom - clientRect.top),
-			pTextLayout.GetAddressOf());
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to create text layout\n");
-			return;
-		}
-
-		hr = pTextLayout->SetTypography(pTypography.Get(), DWRITE_TEXT_RANGE{0, static_cast<UINT32>(title.size())});
-		if (FAILED(hr))
-		{
-			fprintf(stderr, "failed to set typography");
-			return;
-		}
-
-		auto oldColor = pBrush->GetColor();
-		pBrush->SetColor(D2D1::ColorF(0.0f, 0.0f, 0.0f));
-		pRenderTarget->DrawTextLayout(
-			D2D1::Point2F(0.f, 0.f),
-			pTextLayout.Get(),
-			pBrush.Get());
-		pBrush->SetColor(oldColor);
-
-		oldColor = pBrush->GetColor();
-		DWRITE_TEXT_METRICS textMetrics{};
-		pTextLayout->GetMetrics(&textMetrics);
-
-		pRenderTarget->FillRectangle(
-			D2D1::RectF(textMetrics.left, 0.0f, 2.0f, textMetrics.height), 
-			pBrush.Get());
-		pBrush->SetColor(oldColor);
-
-		pRenderTarget->EndDraw();*/
+		auto textlayout = text->CreateTextLayout(title.c_str(), 600, 600);
+		g->DrawTextLayout(D2D1::Point2F(0.f, 0.f), textlayout);
+		g->EndDraw();
+	
 	}
 
 	void OnMouseMove(int x, int y) override
@@ -339,6 +251,7 @@ int main(int argc, char** argv)
 		fprintf(stderr, "failed to attach to window");
 		return false;
 	}
+	text = std::make_unique<Pad02::Text>();
 
 	window.Show();
 	

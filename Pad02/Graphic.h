@@ -1,8 +1,12 @@
 #pragma once
 #include <d2d1.h>
+#include <d2d1helper.h>
 #include <dwrite.h>
+#include <memory>
 #include <stdexcept>
 #include <wrl.h>
+
+#include "Text.h"
 
 namespace Pad02
 {
@@ -50,10 +54,7 @@ namespace Pad02
 
 	class Graphic
 	{
-		ComPtr<IDWriteFactory> pWriteFactory = nullptr;
-		ComPtr<IDWriteTextLayout> pTextLayout = nullptr;
-		ComPtr<IDWriteTextFormat> pTextFormat = nullptr;
-		ComPtr<IDWriteTypography> pTypography = nullptr;
+		
 
 		ComPtr<ID2D1Factory> pId2D1Factory = nullptr;
 		ComPtr<ID2D1HwndRenderTarget> pRenderTarget = nullptr;
@@ -80,5 +81,8 @@ namespace Pad02
 		{
 			pRenderTarget->EndDraw();
 		}
+
+		auto DrawLine(D2D1_POINT_2F xy1, D2D1_POINT_2F xy2, float strokeWidth = 1) const -> void;
+		auto DrawTextLayout(D2D1_POINT_2F origin, ComPtr<IDWriteTextLayout>& textLayout) const -> void;
 	};
 }
