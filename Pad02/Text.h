@@ -19,5 +19,6 @@ namespace Pad02
 
 		auto CreateTextFormat(const std::wstring fontName, float fontSize) -> void;
 		[[nodiscard]] auto CreateTextLayout(const std::wstring& text, float maxWidth, float maxHeight) const -> ComPtr<IDWriteTextLayout>;
+		auto HitTestPoint(float x, float y) -> DWRITE_HIT_TEST_METRICS;
 	};
 }

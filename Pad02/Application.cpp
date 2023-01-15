@@ -1,4 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
+#include <algorithm>
 #include <wrl.h>
 #include <Windows.h>
 #include <Windowsx.h>
@@ -7,6 +8,7 @@
 #include <commdlg.h>
 
 #include <dwrite.h>
+#include <fstream>
 
 
 #include <sstream>
@@ -15,7 +17,7 @@
 #include "File.h"
 #include "Window.h"
 
-
+#include "Menu.h"
 #include "Graphic.h"
 #include "Text.h"
 
@@ -29,43 +31,50 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 
 
-enum Pad02Menu
-{
-	MainFile,
-	MainFileClose,
-	MainFileSave,
-	MainFileLoad,
-	MainTypographyStyle02,
-};
 
 extern void ErrorExit();
+std::shared_ptr<Pad02::Graphic> g = nullptr;
 
-std::unique_ptr<Pad02::Graphic> g = nullptr;
+struct Caret
+{
+	float X;
+	float Y;
+	float Height;
+	float Width;
+
+
+	auto DrawCaret() -> void
+	{
+		g->DrawLine(D2D1::Point2F(X, Y), D2D1::Point2F(Width, Height));
+	}
+};
+
+struct Mouse
+{
+	float X1;
+	float Y1;
+	float X2;
+	float Y2;
+	bool Moving;
+	bool Down;
+};
+
+
 std::unique_ptr<Pad02::Text> text = nullptr;
-int mouseStartX, mouseStartY, mouseEndX, mouseEndY;
-bool mouseMoving = false;
+
+
 class D2Window : public Pad::Window
 {
-	bool mouseDown = false;
-
 	bool isTrailing = false;
 	bool isInside = false;
 	std::vector<TCHAR> m_buf;
+	Mouse position{};
 
 public:
-	D2Window(HINSTANCE hInst) : Pad::Window(hInst)
+	explicit D2Window(HINSTANCE hInst) : Window(hInst)
 	{
 	}
 
-	bool OnCreate(HWND hwnd) override
-	{
-		HRESULT hr = S_OK;
-		RECT clientRect;
-		GetClientRect(hwnd, &clientRect);
-
-
-		return true;
-	}
 
 	void OnChar(const TCHAR ch, int cRepeat) override
 	{
@@ -73,7 +82,21 @@ public:
 		debug << ch << std::endl;
 
 		OutputDebugString(debug.str().c_str());
-		m_buf.push_back(ch);
+		if (ch == VK_BACK)
+		{
+			m_buf.pop_back();
+		}
+		else if (ch == VK_TAB)
+		{
+			for (unsigned i = 0; i < 4; i++)
+			{
+				m_buf.push_back(L' ');
+			}
+		}
+		else
+		{
+			m_buf.push_back(ch);
+		}
 	}
 
 	void OnPaint(HWND hwnd) override
@@ -84,22 +107,27 @@ public:
 		                                         600,
 		                                         600);
 		g->DrawTextLayout(D2D1::Point2F(0.f, 0.f), textlayout);
-		if(mouseMoving)
-		{
-			g->DrawLine(D2D1::Point2F(static_cast<float>(mouseStartX), static_cast<float>(mouseStartY) ), D2D1::Point2F(static_cast<float>(mouseEndX), static_cast<float>(mouseEndY) ));
-		}
+
+		g->DrawLine(D2D1::Point2F(position.X1, position.Y1),
+		            D2D1::Point2F(position.X2, position.Y2));
+
 		g->EndDraw();
 	}
 
 	void OnMouseMove(int x, int y) override
 	{
 		std::wostringstream coords;
-		if(mouseDown)
+		if (position.Down)
 		{
-			mouseMoving = true;
-		} else
+			position.Moving = true;
+			position.X2 = static_cast<float>(x);
+			position.Y2 = static_cast<float>(y);
+			OutputDebugStringW(L"enable position moving\n");
+		}
+		if (!position.Down)
 		{
-			mouseMoving = false;
+			OutputDebugStringW(L"disable position moving\n");
+			position.Moving = false;
 		}
 		coords << L"X=" << x << L",Y=" << y;
 		SetTitle(coords.str());
@@ -107,17 +135,21 @@ public:
 
 	void OnMouseDown(int x, int y) override
 	{
-		mouseDown = true;
-		mouseStartX = x;
-		mouseStartY = y;
+		position.Down = true;
+		OutputDebugStringW(L"Mouse Down\n");
+		position.X1 = static_cast<float>(x);
+		position.Y1 = static_cast<float>(y);
+
 		HitTest(x, y);
 	}
 
 	void OnMouseUp(int x, int y) override
 	{
-		mouseDown = false;
-		mouseEndX = x;
-		mouseEndY = y;
+		position.Down = false;
+		OutputDebugStringW(L"Mouse Up\n");
+		position.X2 = static_cast<float>(x);
+		position.Y2 = static_cast<float>(y);
+
 		HitTest(x, y);
 	}
 
@@ -132,7 +164,7 @@ public:
 		BOOL inside = FALSE;
 		DWRITE_HIT_TEST_METRICS metrics{};
 
-
+		text->HitTestPoint(x, y);
 		/*HRESULT hr = pTextLayout->HitTestPoint(
 			static_cast<FLOAT>(x),
 			static_cast<FLOAT>(y),
@@ -140,12 +172,6 @@ public:
 			&inside,
 			&metrics);
 		ValidateResult(hr, "failed to get hit test");*/
-
-		fprintf(stderr, "metrics\ninside %s, trailing %s\n", inside ? "true" : "false", trailing ? "true" : "false");
-	}
-
-	void OnDestroy() override
-	{
 	}
 
 	void OnCommand(WPARAM wParam, LPARAM lParam) override
@@ -172,7 +198,7 @@ public:
 		ofn.lCustData = 0L;
 		ofn.lpfnHook = nullptr;
 		ofn.lpTemplateName = nullptr;
-		if (wParam == MainFileSave)
+		if (wParam == Pad02::MainFileSave)
 		{
 			ofn.Flags = OFN_OVERWRITEPROMPT;
 
@@ -186,7 +212,7 @@ public:
 				}
 			}
 		}
-		else if (wParam == MainFileLoad)
+		else if (wParam == Pad02::MainFileLoad)
 		{
 			ofn.Flags = OFN_HIDEREADONLY | OFN_CREATEPROMPT;
 			if (GetOpenFileNameW(&ofn))
@@ -198,50 +224,20 @@ public:
 				m_buf.assign(content.begin(), content.end());
 			}
 		}
-		if (wParam == MainFileClose)
+		if (wParam == Pad02::MainFileClose)
 		{
 			SendMessage(GetInstance(), WM_DESTROY, 0, 0);
 		}
 	}
 };
 
-bool CreateFileMenu(HMENU hParentMenu)
-{
-	if (!AppendMenu(hParentMenu, MF_STRING, MainFileLoad, L"&Open"))
-	{
-		fprintf(stderr, "failed to append menu item\n");
-		return false;
-	}
 
-	if (!AppendMenu(hParentMenu, MF_STRING, MainFileSave, L"S&ave"))
-	{
-		fprintf(stderr, "failed to append menu item\n");
-		return false;
-	}
-
-	if (!AppendMenu(hParentMenu, MF_STRING, MainFileClose, L"&Close"))
-	{
-		fprintf(stderr, "failed to append menu item\n");
-		return false;
-	}
-	return true;
-}
-
-bool CreateTypographyMenu(HMENU hParentMenu)
-{
-	if (!AppendMenu(hParentMenu, MF_STRING, MainTypographyStyle02, L"SS 02"))
-	{
-		fprintf(stderr, "failed to append menu item\n");
-		return false;
-	}
-
-	return true;
-}
-
-int main(int argc, char** argv)
+int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int nCmdShow)
 {
 	// According to Microsoft SDL
-	HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption,nullptr, 0);
+	HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption, nullptr, 0);
+
+
 	SetConsoleOutputCP(CP_UTF8);
 
 	CoInitialize(nullptr);
@@ -249,63 +245,40 @@ int main(int argc, char** argv)
 
 	if (!D2Window::Register(HINST_THISCOMPONENT))
 	{
-		fprintf(stderr, "failed to register window\n");
-		return 1;
+		throw std::runtime_error("failed to register window");
 	}
 
 
-	g = std::make_unique<Pad02::Graphic>();
+	g = std::make_shared<Pad02::Graphic>();
 	if (!window.Create(L"PAD 02"))
 	{
-		fprintf(stderr, "failed to create window");
-		const auto dwError = GetLastError();
-
-		return 1;
+		throw std::runtime_error("failed to create window");
 	}
 	if (!g->AttachToWindow(window.GetInstance()))
 	{
-		fprintf(stderr, "failed to attach to window");
-		return false;
+		throw std::runtime_error("failed to attach window");
 	}
+
 	text = std::make_unique<Pad02::Text>();
-	text->CreateTextFormat(L"MonoLisa", 13.0f);
+	try
+	{
+		text->CreateTextFormat(L"MonoLisa", 13.0f);
+	}
+	catch (...)
+	{
+		OutputDebugStringW(L"Creating font with Arial instead");
+		text->CreateTextFormat(L"Arial", 13.0f);
+	}
+
+
 	window.Show();
+	const auto mainFileBar = Pad02::FileMenu{};
+	const auto mainTypographyBar = Pad02::TypographyMenu{};
+	const auto mainMenuBar = Pad02::MenuManager{};
+	mainMenuBar.AddMenu(L"&File", mainFileBar);
+	mainMenuBar.AddMenu(L"&Typography", mainTypographyBar);
 
-	const auto mainMenuBar = Pad::Menu();
-	const auto mainFileBar = Pad::PopupMenu();
-	const auto mainTypographyBar = CreatePopupMenu();
-
-
-	if (!CreateFileMenu(mainFileBar.GetInstance()))
-	{
-		fprintf(stderr, "failed to create File menu\n");
-		return 1;
-	}
-	if (!AppendMenu(mainMenuBar.GetInstance(), MF_POPUP, reinterpret_cast<UINT_PTR>(mainFileBar.GetInstance()),
-	                L"&File"))
-	{
-		fprintf(stderr, "failed to append menu item");
-		return 1;
-	}
-
-	if (!CreateTypographyMenu(mainTypographyBar))
-	{
-		return 1;
-	}
-
-
-	if (!AppendMenuW(mainMenuBar.GetInstance(), MF_POPUP, reinterpret_cast<UINT_PTR>(mainTypographyBar),
-	                 L"&Typygraphy"))
-	{
-		fprintf(stderr, "failed to append menu item");
-		return false;
-	}
-
-	if (!SetMenu(window.GetInstance(), mainMenuBar.GetInstance()))
-	{
-		fprintf(stderr, "failed to create menu");
-		return false;
-	}
+	mainMenuBar.SetMenu(window);
 
 
 	MSG msg;
@@ -314,7 +287,6 @@ int main(int argc, char** argv)
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-	DestroyMenu(mainTypographyBar);
 
 	CoUninitialize();
 	return static_cast<INT>(msg.wParam);

@@ -73,5 +73,13 @@ auto Pad02::Text::CreateTextLayout(const std::wstring& text, float maxWidth,
 		pTextFormat.Get(),
 		maxWidth, maxHeight,
 		pTextLayout.GetAddressOf());
+	
 	return pTextLayout;
 }
+
+		
+auto Pad02::Text::HitTestPoint(float x, float y) -> DWRITE_HIT_TEST_METRICS
+{
+	return DWRITE_HIT_TEST_METRICS{};
+}
+

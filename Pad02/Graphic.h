@@ -1,5 +1,7 @@
 #pragma once
 #include <d2d1.h>
+#include <d2d1_1.h>
+
 #include <d2d1helper.h>
 #include <dwrite.h>
 #include <memory>
@@ -54,33 +56,20 @@ namespace Pad02
 
 	class Graphic
 	{
-		
-
 		ComPtr<ID2D1Factory> pId2D1Factory = nullptr;
 		ComPtr<ID2D1HwndRenderTarget> pRenderTarget = nullptr;
 		ComPtr<ID2D1SolidColorBrush> pBrush = nullptr;
+		ComPtr<ID2D1DeviceContext> pDeviceContext = nullptr;
 
 	public:
 		Graphic();
 
-		auto Resize(const int width, int const height)
-		{
-			HRESULT hr = pRenderTarget->Resize(D2D1::SizeU(width, height));
-			ValidateResult(hr, "failed to resize render target");
-		}
+		auto Resize(int width, int height) const -> void;
 		auto AttachToWindow(HWND hwnd) -> bool;
 
-		auto BeginDraw(D2D1::ColorF clearColor = D2D1::ColorF::White)
-		{
-			pRenderTarget->BeginDraw();
-			pRenderTarget->SetTransform(D2D1::IdentityMatrix());
-			pRenderTarget->Clear(clearColor);
-		}
+		auto BeginDraw(D2D1::ColorF clearColor = D2D1::ColorF::White) const -> void;
 
-		auto EndDraw()
-		{
-			pRenderTarget->EndDraw();
-		}
+		auto EndDraw() const -> void;
 
 		auto DrawLine(D2D1_POINT_2F xy1, D2D1_POINT_2F xy2, float strokeWidth = 1) const -> void;
 		auto DrawTextLayout(D2D1_POINT_2F origin, ComPtr<IDWriteTextLayout>& textLayout) const -> void;

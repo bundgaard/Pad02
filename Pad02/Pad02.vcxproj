@@ -108,7 +108,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -124,7 +124,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -140,6 +140,7 @@
     <ClInclude Include="Edit.h" />
     <ClInclude Include="File.h" />
     <ClInclude Include="Graphic.h" />
+    <ClInclude Include="Menu.h" />
     <ClInclude Include="Text.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
