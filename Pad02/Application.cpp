@@ -20,6 +20,7 @@
 #include "Menu.h"
 #include "Graphic.h"
 #include "Text.h"
+#include "NotificationIcon.h"
 
 
 #pragma comment(lib, "dwrite.lib")
@@ -176,6 +177,7 @@ public:
 
 	void OnCommand(WPARAM wParam, LPARAM lParam) override
 	{
+		
 		std::wstring filename;
 		filename.resize(MAX_PATH);
 		OPENFILENAME ofn{};
@@ -228,10 +230,11 @@ public:
 		{
 			SendMessage(GetInstance(), WM_DESTROY, 0, 0);
 		}
+		
 	}
 };
 
-
+// TODO: FIX TO NOT THROW BUT COLLECT AND RETURN 1
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int nCmdShow)
 {
 	// According to Microsoft SDL
@@ -269,7 +272,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, 
 		OutputDebugStringW(L"Creating font with Arial instead");
 		text->CreateTextFormat(L"Arial", 13.0f);
 	}
-
+	Pad02::NotificationIcon nicon(window.GetInstance());
 
 	window.Show();
 	const auto mainFileBar = Pad02::FileMenu{};
@@ -284,6 +287,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, 
 	MSG msg;
 	while (GetMessage(&msg, nullptr, 0, 0))
 	{
+		
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
