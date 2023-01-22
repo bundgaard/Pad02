@@ -1,3 +1,4 @@
+#include "precompiled.h"
 #include "NotificationIcon.h"
 
 void Pad02::NotificationIcon::_CreateWindow()

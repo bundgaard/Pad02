@@ -1,6 +1,5 @@
+#include "precompiled.h"
 #include "Graphic.h"
-
-#include <memory>
 
 #include "Text.h"
 

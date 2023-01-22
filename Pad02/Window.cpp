@@ -1,3 +1,4 @@
+#include "precompiled.h"
 #include "Window.h"
 
 #include <sstream>

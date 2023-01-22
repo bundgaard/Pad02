@@ -362,3 +362,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /Pad02/vcpkg_installed/x64-windows
+/Pad02/vcpkg_installed/x86-windows

@@ -1,3 +1,4 @@
+#include "precompiled.h"
 #include "FontManager.h"
 
 Pad02::FontManager::FontManager()
