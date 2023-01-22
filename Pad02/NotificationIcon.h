@@ -1,7 +1,11 @@
 #pragma once
 
 #include <Windows.h>
+#include <strsafe.h>
 #include <shellapi.h>
+
+
+#include <string>
 
 #define CM_NOTIFICATIONICON (WM_USER+1)
 
@@ -18,11 +22,12 @@ namespace Pad02
 		HWND m_Owner;
 		HWND m_NotificationIcon;
 		NOTIFYICONDATA m_notifyicondata;
+		std::wstring m_ApplicationName;
 
 		void _CreateWindow();
 	public:
 		NotificationIcon() = delete;
-		NotificationIcon(const HWND owner);
+		NotificationIcon(const HWND owner, const std::wstring& applicationName);
 		~NotificationIcon();
 
 		void CreateNotificationIcon();

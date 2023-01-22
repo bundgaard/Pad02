@@ -24,7 +24,7 @@ void Pad02::NotificationIcon::_CreateWindow()
 
 }
 
-Pad02::NotificationIcon::NotificationIcon(const HWND owner) : m_Owner(owner)
+Pad02::NotificationIcon::NotificationIcon(const HWND owner, const std::wstring& applicationName) : m_Owner(owner), m_ApplicationName(applicationName)
 {
 	CreateNotificationIcon();
 }
@@ -51,6 +51,7 @@ void Pad02::NotificationIcon::CreateNotificationIcon()
 	nid.uCallbackMessage = CM_NOTIFICATIONICON;
 	nid.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
 	nid.uFlags = NIF_MESSAGE | NIF_SHOWTIP | NIF_TIP | NIF_ICON;
+	StringCchCopy(nid.szTip,ARRAYSIZE(nid.szTip), m_ApplicationName.c_str());
 	Shell_NotifyIcon(NIM_ADD, &nid);
 	nid.uVersion = NOTIFYICON_VERSION_4;
 	Shell_NotifyIconW(NIM_SETVERSION, &nid);

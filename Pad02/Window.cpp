@@ -151,32 +151,7 @@ LRESULT CALLBACK Pad::Window::OnProc(UINT msg, WPARAM wParam, LPARAM lParam)
 			OnMouseMove(mouseX, mouseY);
 		}
 		break;
-	case CM_NOTIFICATIONICON:
-		{
-			
-		switch(LOWORD(lParam))
-		{
-		case NIN_SELECT:
-		case NIN_KEYSELECT:
-			return 0;
-		case WM_CONTEXTMENU:
-		{
-			
-			std::wstringstream text;
-			text << L"Clicked on notification area" << std::endl;
-			auto x = GET_X_LPARAM(lParam);
-			auto y = GET_Y_LPARAM(lParam);
-			text << L"x=" << x << std::endl;
-			text << L"y=" << y << std::endl;
-			OutputDebugString(text.str().c_str());
-
-		}
-			return 0;
-		}
-			
-
-		}
-		break;
+	
 	case WM_ERASEBKGND:
 		return 1;
 	case WM_PRINTCLIENT:
@@ -188,6 +163,11 @@ LRESULT CALLBACK Pad::Window::OnProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		PostQuitMessage(0);
 		break;
 	default:
+		if (msg >= WM_USER) 
+		{
+			return OnCustom(msg, wParam, lParam);
+		}
+		
 		return DefWindowProc(m_hwnd, msg, wParam, lParam);
 	}
 }

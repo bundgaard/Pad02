@@ -13,7 +13,7 @@ namespace Pad
 			
 		}
 	public:
-		Edit()
+		Edit() : m_hInstance(nullptr), m_hwnd(nullptr)
 		{
 			
 		}

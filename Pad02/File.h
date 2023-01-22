@@ -1,9 +1,5 @@
 #pragma once
-#define WIN32_LEAN_AND_MEAN
-#include <iostream>
-#include <Windows.h>
-
-#include <string>
+#include "precompiled.h"
 
 
 // Idea for this File class is to handle input and output between widechar and UTF8 multibyte.
@@ -13,18 +9,18 @@ namespace Pad02
 	class File
 	{
 		std::wstring Content;
-		HANDLE HFile;
-		DWORD CbFileSizeHigh{};
-		DWORD CbFileSizeLow;
+		HANDLE HFile = nullptr;
+		DWORD CbFileSizeHigh = 0;
+		DWORD CbFileSizeLow = 0;
 
 		std::string ToMultiByte(const std::wstring& wcData)
 		{
-			DWORD cbWrittenBytes;
+
 			const auto toReserve = WideCharToMultiByte(
 				CP_UTF8,
 				0,
 				wcData.c_str(),
-				wcData.size(),
+				gsl::narrow_cast<int>(wcData.size()),
 				nullptr,
 				0,
 				nullptr,
@@ -36,9 +32,9 @@ namespace Pad02
 				CP_UTF8,
 				0,
 				wcData.c_str(),
-				wcData.size(),
+				gsl::narrow_cast<int>(wcData.size()),
 				mbData.data(),
-				mbData.size(),
+				gsl::narrow_cast<int>(mbData.size()),
 				nullptr,
 				nullptr);
 			return mbData;
@@ -46,11 +42,11 @@ namespace Pad02
 
 		std::wstring ToWideChar(std::string& mbData)
 		{
-			const auto toReserve = MultiByteToWideChar(CP_UTF8, 0, mbData.c_str(), mbData.size(), nullptr, 0);
+			const auto toReserve = MultiByteToWideChar(CP_UTF8, 0, mbData.c_str(), gsl::narrow_cast<int>(mbData.size()), nullptr, 0);
 			std::wstring wcData;
 			wcData.resize(toReserve);
 
-			MultiByteToWideChar(CP_UTF8, 0, mbData.c_str(), mbData.size(), wcData.data(), wcData.size());
+			MultiByteToWideChar(CP_UTF8, 0, mbData.c_str(), gsl::narrow_cast<int>(mbData.size()), wcData.data(), gsl::narrow_cast<int>(wcData.size()));
 			return wcData;
 		}
 		File(const wchar_t* szFileName, const char mode)
@@ -127,7 +123,7 @@ namespace Pad02
 			if (!WriteFile(
 				HFile,
 				mbData.data(),
-				mbData.size(),
+				gsl::narrow_cast<DWORD>(mbData.size()),
 				&wroteBytes,
 				nullptr))
 			{

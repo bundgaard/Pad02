@@ -1,10 +1,5 @@
 #pragma once
-#define WIN32_LEAN_AND_MEAN
-#include <memory>
-#include <string>
-#include <Windows.h>
-#include <Windowsx.h>
-#include <wrl.h>
+#include "precompiled.h"
 
 
 namespace Pad
@@ -67,9 +62,23 @@ namespace Pad
 		{
 		}
 
+		virtual auto OnCustom(UINT, WPARAM, LPARAM) -> LRESULT
+		{
+			return 0;
+		}
+
 		auto SetTitle(const std::wstring& title)
 		{
 			SetWindowText(m_hwnd, title.c_str());
+		}
+
+		auto GetTitle() const -> std::wstring
+		{
+			auto len = GetWindowTextLength(m_hwnd)+1; // plus the zero 
+			std::wstring title;
+			title.resize(len);
+			GetWindowText(m_hwnd, title.data(), gsl::narrow_cast<int>(title.size()));
+			return title;
 		}
 
 		auto GetInstance() const -> HWND
@@ -125,11 +134,6 @@ namespace Pad
 		PopupMenu()
 		{
 			HMenu = CreatePopupMenu();
-		}
-
-		~PopupMenu() override
-		{
-			DestroyMenu(HMenu);
 		}
 	};
 }

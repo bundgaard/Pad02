@@ -1,5 +1,5 @@
 #pragma once
-
+#include "precompiled.h"
 
 namespace Pad02
 {
