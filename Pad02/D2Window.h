@@ -51,6 +51,11 @@ namespace Pad02
 			auto textlayout = m_text->CreateTextLayout(title,
 				600,
 				600);
+			if (position.Down)
+			{
+				OutputDebugString(L"Mouse is down WM_PAINT");
+			}
+			
 			m_g->DrawTextLayout(D2D1::Point2F(0.f, 0.f), textlayout);
 
 			m_g->DrawLine(D2D1::Point2F(position.X1, position.Y1),

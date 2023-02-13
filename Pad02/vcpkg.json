@@ -3,6 +3,7 @@
   "name": "pad02",
   "version": "0.0.1",
   "dependencies": [
-    "ms-gsl"
+    "ms-gsl",
+    "wil"
   ]
 }

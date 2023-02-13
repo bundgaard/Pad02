@@ -20,17 +20,14 @@ using namespace Pad02;
 
 extern void ErrorExit();
 
-
-
-
 // TODO: FIX TO NOT THROW BUT COLLECT AND RETURN 1
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int nCmdShow)
 {
 	// According to Microsoft SDL
 	HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption, nullptr, 0);
-
-
 	SetConsoleOutputCP(CP_UTF8);
+	
+	
 	HRESULT hr = S_OK;
 	hr = CoInitialize(nullptr);
 	if (FAILED(hr))
@@ -90,7 +87,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, 
 	MSG msg;
 	while (GetMessage(&msg, nullptr, 0, 0))
 	{
-
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
