@@ -9,8 +9,6 @@
 #include "NotificationIcon.h"
 #include "D2Window.h"
 
-
-
 #pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "d2d1.lib")
 
@@ -46,8 +44,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, 
 		return 1;
 	}
 
-
-
 	if (!window.Create(L"PAD 02"))
 	{
 		MessageBox(HWND_DESKTOP, L"Failed to create window", L"Error", MB_OK|MB_ICONERROR);
@@ -58,7 +54,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, 
 		MessageBox(HWND_DESKTOP, L"failed to attach window", L"Error", MB_OK|MB_ICONERROR);
 		return 1;
 	}
-
 	
 	try
 	{
