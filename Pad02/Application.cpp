@@ -9,6 +9,9 @@
 #include "NotificationIcon.h"
 #include "D2Window.h"
 
+#include <memory>
+#include <functional>
+
 #pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "d2d1.lib")
 
@@ -17,7 +20,19 @@ using namespace Pad02;
 
 
 extern void ErrorExit();
-
+struct Com
+{
+	Com()
+	{
+		OutputDebugStringW(L"Com init");
+		(void)CoInitialize(nullptr);
+	}
+	~Com()
+	{
+		OutputDebugStringW(L"Com dtor\n");
+		CoUninitialize();
+	}
+};
 // TODO: FIX TO NOT THROW BUT COLLECT AND RETURN 1
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int nCmdShow)
 {
@@ -25,13 +40,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, 
 	HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption, nullptr, 0);
 	SetConsoleOutputCP(CP_UTF8);
 	
-	
-	HRESULT hr = S_OK;
-	hr = CoInitialize(nullptr);
-	if (FAILED(hr))
-	{
-		return 1;
-	}
+	Com com;
 	
 	auto g = std::make_shared<Pad02::Graphic>();
 	auto text = std::make_shared<Pad02::Text>();
@@ -86,6 +95,5 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, 
 		DispatchMessage(&msg);
 	}
 
-	CoUninitialize();
 	return static_cast<INT>(msg.wParam);
 }
