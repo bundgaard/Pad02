@@ -7,6 +7,16 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase);
 namespace Pad02
 {
+
+	struct TextNode
+	{
+		int TokenType;
+		int StartPosition;
+		int Length;
+		D2D1::ColorF Color;
+
+	};
+
 	class D2Window : public Pad::Window
 	{
 		bool isTrailing = false;
@@ -15,6 +25,9 @@ namespace Pad02
 		Mouse position{};
 		std::shared_ptr<Pad02::Text> m_text = nullptr;
 		std::shared_ptr<Pad02::Graphic> m_g = nullptr;
+		int m_cursorX;
+		int m_cursorY;
+
 	public:
 		explicit D2Window(HINSTANCE hInst, std::shared_ptr<Pad02::Graphic> g, std::shared_ptr<Pad02::Text> text) : Window(hInst), m_text(text), m_g(g)
 		{
@@ -55,7 +68,7 @@ namespace Pad02
 			{
 				OutputDebugString(L"Mouse is down WM_PAINT");
 			}
-			
+			m_g->DrawLine(D2D1::Point2F(0.0f, 0.0f), D2D1::Point2F(0.0f, 14.0f));
 			m_g->DrawTextLayout(D2D1::Point2F(0.f, 0.f), textlayout);
 
 			m_g->DrawLine(D2D1::Point2F(position.X1, position.Y1),

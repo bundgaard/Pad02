@@ -30,7 +30,7 @@ Pad02::Text::Text()
 
 	ComPtr<IDWriteFontFace> pFontFace = nullptr;
 	ComPtr<IDWriteFontFile> pFontFile = nullptr;
-	hr = pWriteFactory->CreateFontFileReference(L"C:\\Code\\MonoLisa\\ttf\\MonoLisaNormal.ttf", nullptr, &pFontFile);
+	hr = pWriteFactory->CreateFontFileReference(L"C:\\Code\\MonoLisaNormal.ttf", nullptr, &pFontFile);
 	ValidateResult(hr, "failed to create reference to font");
 
 	std::array<IDWriteFontFile*, 1> fontFiles{ {pFontFile.Get()} };

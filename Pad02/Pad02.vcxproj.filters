@@ -74,5 +74,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="vcpkg.json" />
+    <None Include="SyntaxHighlighter.md" />
   </ItemGroup>
 </Project>

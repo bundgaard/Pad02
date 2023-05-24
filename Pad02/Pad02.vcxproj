@@ -167,6 +167,7 @@
     <ClInclude Include="WinStruct.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="SyntaxHighlighter.md" />
     <None Include="vcpkg.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
