@@ -256,48 +256,40 @@ namespace Pad02
 			ofn.lStructSize = sizeof(OPENFILENAMEW);
 			ofn.hInstance = HINST_THISCOMPONENT;
 			ofn.hwndOwner = GetInstance();
-			ofn.lpstrCustomFilter = nullptr;
-			ofn.nMaxCustFilter = 0;
-			ofn.nFilterIndex = 0;
 			ofn.lpstrFile = filename.data();
-			ofn.nMaxFile = MAX_PATH;
-			ofn.lpstrFileTitle = nullptr;
+			ofn.nMaxFile = MAX_PATH;			
 			ofn.nMaxFileTitle = MAX_PATH;
-			ofn.lpstrInitialDir = nullptr;
-			ofn.lpstrTitle = nullptr;
-			ofn.Flags = 0;
-			ofn.nFileOffset = 0;
-			ofn.nFileExtension = 0;
 			ofn.lpstrDefExt = TEXT("txt");
-			ofn.lCustData = 0L;
-			ofn.lpfnHook = nullptr;
-			ofn.lpTemplateName = nullptr;
+			ofn.lpstrFilter = L"Text files\0*.txt";
+			HRESULT hr = S_OK;
 			if (wParam == Pad02::MainFileSave)
 			{
 				ofn.Flags = OFN_OVERWRITEPROMPT;
 
-				if (GetSaveFileNameW(&ofn))
+				hr = GetSaveFileNameW(&ofn) ? S_OK : E_FAIL; 
+
+				if (SUCCEEDED(hr) && (!Pad02::File::Create(ofn.lpstrFile).Save(std::wstring(m_buf.begin(), m_buf.end()))))
 				{
-					if (!Pad02::File::Create(ofn.lpstrFile).Save(std::wstring(m_buf.begin(), m_buf.end())))
-					{
-						fwprintf(stdout, L"filename %s\n", ofn.lpstrFile);
-						fprintf(stderr, "failed to save file\n");
-						return;
-					}
+					fwprintf(stdout, L"filename %s\n", ofn.lpstrFile);
+					fprintf(stderr, "failed to save file\n");
+					return;
 				}
 			}
-			else if (wParam == Pad02::MainFileLoad)
+			
+			if (wParam == Pad02::MainFileLoad)
 			{
 				ofn.Flags = OFN_HIDEREADONLY | OFN_CREATEPROMPT;
-				if (GetOpenFileNameW(&ofn))
+				hr = GetOpenFileNameW(&ofn) ? S_OK : E_FAIL;
+
+				if (SUCCEEDED(hr))
 				{
 					OutputDebugString(L"Open");
 					auto file = Pad02::File::Load(ofn.lpstrFile);
 					auto content = file.ReadAll();
-
 					m_buf.assign(content.begin(), content.end());
 				}
 			}
+			
 			if (wParam == Pad02::MainFileClose)
 			{
 				SendMessage(GetInstance(), WM_DESTROY, 0, 0);
