@@ -20,14 +20,14 @@ using namespace Pad02;
 
 
 extern void ErrorExit();
-struct Com
+struct ComInitializer
 {
-	Com()
+	ComInitializer()
 	{
 		OutputDebugStringW(L"Com init");
 		(void)CoInitialize(nullptr);
 	}
-	~Com()
+	~ComInitializer()
 	{
 		OutputDebugStringW(L"Com dtor\n");
 		CoUninitialize();
@@ -40,39 +40,16 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, 
 	HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption, nullptr, 0);
 	SetConsoleOutputCP(CP_UTF8);
 	
-	Com com;
+	ComInitializer comInit;
 	
-	auto g = std::make_shared<Pad02::Graphic>();
-	auto text = std::make_shared<Pad02::Text>();
-
-	D2Window window(hInst, g, text);
-
-	if (!D2Window::Register(hInst))
+	
+	D2Window window(hInst);
+	HRESULT hr = S_OK;
+	if (SUCCEEDED(hr))
 	{
-		MessageBox(HWND_DESKTOP, L"Failed to register window", L"Error", MB_OK|MB_ICONERROR);
-		return 1;
-	}
-
-	if (!window.Create(L"PAD 02"))
-	{
-		MessageBox(HWND_DESKTOP, L"Failed to create window", L"Error", MB_OK|MB_ICONERROR);
-		return 1;
-	}
-	if (!g->AttachToWindow(window.GetInstance()))
-	{
-		MessageBox(HWND_DESKTOP, L"failed to attach window", L"Error", MB_OK|MB_ICONERROR);
-		return 1;
+		hr = window.Create(hInst, L"PAD 02");
 	}
 	
-	try
-	{
-		text->CreateTextFormat(L"MonoLisa", 13.0f);
-	}
-	catch (...)
-	{
-		OutputDebugStringW(L"Creating font with Arial instead");
-		text->CreateTextFormat(L"Arial", 13.0f);
-	}
 
 	Pad02::NotificationIcon nicon(window.GetInstance(), window.GetTitle());
 
@@ -84,9 +61,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, 
 
 	mainMenuBar.AddMenu(L"&File", mainFileBar);
 	mainMenuBar.AddMenu(L"&Typography", mainTypographyBar);
-
 	mainMenuBar.SetMenu(window);
-
 
 	MSG msg;
 	while (GetMessage(&msg, nullptr, 0, 0))

@@ -5,6 +5,7 @@
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase);
+
 namespace Pad02
 {
 
@@ -17,22 +18,89 @@ namespace Pad02
 
 	};
 
+	class Caret
+	{
+		float mCaretX;
+		float mCaretY;
+	public:
+		Caret() : mCaretX(0), mCaretY(0)
+		{
+
+		}
+
+		~Caret() = default;
+		float GetHeight() const 
+		{
+			return 14.0f;
+		}
+		void IncrementY()
+		{
+			mCaretY++;
+		}
+		void IncrementX()
+		{
+			mCaretX++;
+		}
+		void DecrementY()
+		{
+			--mCaretY;
+		}
+		void DecrementX()
+		{
+			--mCaretX;
+		}
+		void ResetY()
+		{
+			mCaretY = 0;
+		}
+		void ResetX()
+		{
+			mCaretX = 0;
+		}
+		void Render(std::unique_ptr< Graphic>& g)
+		{
+			g->DrawLine(D2D1::Point2F(mCaretX, mCaretY), D2D1::Point2F(mCaretX, mCaretY + GetHeight()));
+		}
+	};
+	/*
+	auto g = std::make_shared<Pad02::Graphic>();
+	auto text = std::make_shared<Pad02::Text>();
+
+	*/
 	class D2Window : public Pad::Window
 	{
+		Caret mCaret;
 		bool isTrailing = false;
 		bool isInside = false;
-		std::vector<TCHAR> m_buf;
+
 		Mouse position{};
-		std::shared_ptr<Pad02::Text> m_text = nullptr;
-		std::shared_ptr<Pad02::Graphic> m_g = nullptr;
-		int m_cursorX;
-		int m_cursorY;
+		std::unique_ptr<Pad02::Text> m_text = nullptr;
+		std::unique_ptr<Pad02::Graphic> m_g = nullptr;
+
+		std::vector<TCHAR> m_buf;
 
 	public:
-		explicit D2Window(HINSTANCE hInst, std::shared_ptr<Pad02::Graphic> g, std::shared_ptr<Pad02::Text> text) : Window(hInst), m_text(text), m_g(g)
+		explicit D2Window(HINSTANCE hInst) : Window(hInst), mCaret(Caret())
 		{
 		}
 
+		bool OnCreate(HWND hwnd) override
+		{
+			m_g = std::make_unique<Pad02::Graphic>();
+			m_text = std::make_unique<Pad02::Text>();
+
+			try
+			{
+				m_text->CreateTextFormat(L"MonoLisa", 13.0f);
+			}
+			catch (...)
+			{
+				OutputDebugStringW(L"Creating font with Arial instead");
+				m_text->CreateTextFormat(L"Arial", 13.0f);
+			}
+			m_g->AttachToWindow(hwnd);
+			return true;
+		}
 
 		void OnChar(const TCHAR ch, int cRepeat) override
 		{
@@ -54,6 +122,15 @@ namespace Pad02
 			else
 			{
 				m_buf.push_back(ch);
+				if (ch == L'\n')
+				{
+					mCaret.ResetX();
+					mCaret.IncrementY();
+				}
+				else
+				{
+					mCaret.IncrementX();
+				}
 			}
 		}
 
@@ -68,7 +145,7 @@ namespace Pad02
 			{
 				OutputDebugString(L"Mouse is down WM_PAINT");
 			}
-			m_g->DrawLine(D2D1::Point2F(0.0f, 0.0f), D2D1::Point2F(0.0f, 14.0f));
+			mCaret.Render(m_g);
 			m_g->DrawTextLayout(D2D1::Point2F(0.f, 0.f), textlayout);
 
 			m_g->DrawLine(D2D1::Point2F(position.X1, position.Y1),

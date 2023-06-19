@@ -22,8 +22,8 @@ namespace Pad
 		};
 		~Window() = default;
 
-		static auto Register(HINSTANCE hInst) -> ATOM;
-		auto Create(const std::wstring& title) -> bool;
+		
+		auto Create(const HINSTANCE hInst, const std::wstring& title) -> HRESULT;
 
 		virtual auto OnPaint(HWND) -> void
 		{

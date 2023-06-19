@@ -5,44 +5,50 @@
 #include <string>
 #include <strsafe.h>
 #include "NotificationIcon.h"
-ATOM Pad::Window::Register(HINSTANCE hInst)
-{
-	WNDCLASSEX wc{};
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.cbSize = sizeof(WNDCLASSEX);
-	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wc.hIcon = LoadIcon(nullptr, IDI_SHIELD);
-	wc.hIconSm = LoadIcon(nullptr, IDI_SHIELD);
-	wc.hbrBackground = static_cast<HBRUSH>(GetStockObject(COLOR_WINDOW + 1));
-	wc.lpfnWndProc = &Proc;
-	wc.hInstance = hInst;
-	wc.lpszClassName = app_class;
-	wc.lpszMenuName = nullptr;
-	wc.style = CS_HREDRAW | CS_VREDRAW;
 
-	return RegisterClassEx(&wc);
-}
 
-bool Pad::Window::Create(const std::wstring& title )
+HRESULT Pad::Window::Create(const HINSTANCE hInst, const std::wstring& title)
 {
-	m_hwnd = CreateWindow(
-		app_class,
-		title.c_str(),
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT,
-		CW_USEDEFAULT, CW_USEDEFAULT,
-		nullptr,
-		(HMENU)nullptr,
-		m_hInst,
-		this);
-	if (!m_hwnd)
+	
+	HRESULT hr = S_OK;
+	if (SUCCEEDED(hr))
 	{
-		return false;
+		WNDCLASSEX wc{};
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = 0;
+		wc.cbSize = sizeof(WNDCLASSEX);
+		wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+		wc.hIcon = LoadIcon(nullptr, IDI_SHIELD);
+		wc.hIconSm = LoadIcon(nullptr, IDI_SHIELD);
+		wc.hbrBackground = static_cast<HBRUSH>(GetStockObject(COLOR_WINDOW + 1));
+		wc.lpfnWndProc = &Proc;
+		m_hInst = wc.hInstance = hInst;
+		wc.lpszClassName = app_class;
+		wc.lpszMenuName = nullptr;
+		wc.style = CS_HREDRAW | CS_VREDRAW;
+
+		hr = RegisterClassEx(&wc) ? S_OK : E_FAIL;
+	}
+	
+	if (SUCCEEDED(hr))
+	{
+		m_hwnd = CreateWindow(
+			app_class,
+			title.c_str(),
+			WS_OVERLAPPEDWINDOW,
+			CW_USEDEFAULT, CW_USEDEFAULT,
+			CW_USEDEFAULT, CW_USEDEFAULT,
+			nullptr,
+			(HMENU)nullptr,
+			m_hInst,
+			this);
+		hr = m_hwnd ? S_OK : E_FAIL;
+
 	}
 
+	return hr;
+
 	
-	return true;
 }
 void ErrorExit() 
 { 
